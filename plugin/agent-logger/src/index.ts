@@ -8,7 +8,7 @@ import {
   serializeSessionEnd,
   serializeError,
 } from './serializers.js';
-import type { ToolEvent } from './types.js';
+import type { ToolEvent, LoggerConfig } from './types.js';
 
 interface Plugin {
   event?: (input: { type: string; data?: any }) => Promise<void>;
@@ -23,16 +23,28 @@ interface Plugin {
 }
 
 export default async function AgentLogger({ client }: { client: any }): Promise<Plugin> {
-  const config = loadConfig();
-  const logger = new ActivityLogger(config);
-  const rotator = new LogRotator(config);
+  let initialized = false;
+  let config: LoggerConfig;
+  let logger: ActivityLogger;
+  let rotator: LogRotator;
+  let sessionId: string | undefined;
 
-  logger.log(serializeSessionStart(client, config));
+  try {
+    config = loadConfig();
+    logger = new ActivityLogger(config);
+    rotator = new LogRotator(config);
+    sessionId = client?.session?.id;
+    initialized = true;
 
-  const sessionId = client?.session?.id;
+    logger.log(serializeSessionStart(client, config));
+  } catch (error) {
+    console.error('[AgentLogger] Failed to initialize:', error);
+    return {};
+  }
 
   return {
     event: async (input: { type: string; data?: any }) => {
+      if (!initialized) return;
       try {
         if (config.excludedEvents.includes(input.type)) {
           return;
@@ -56,6 +68,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     'tool.execute.before': async (input: { tool: string; args: any }) => {
+      if (!initialized) return;
       try {
         const toolEvent: ToolEvent = {
           tool: input.tool,
@@ -77,6 +90,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
       input: { tool: string; args: any },
       output: { duration: number; result?: any }
     ) => {
+      if (!initialized) return;
       try {
         const toolEvent: ToolEvent = {
           tool: input.tool,
@@ -102,6 +116,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     'client.init': async () => {
+      if (!initialized) return;
       try {
         logger.log({
           timestamp: getTimestamp(config),
@@ -120,6 +135,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     close: async () => {
+      if (!initialized) return;
       try {
         logger.log(serializeSessionEnd(client, config));
         await logger.close();
@@ -130,6 +146,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     'hook.error': async (error: Error, hookName: string) => {
+      if (!initialized) return;
       try {
         const entry = serializeError(error, `hook:${hookName}`, config, sessionId);
         logger.log(entry);

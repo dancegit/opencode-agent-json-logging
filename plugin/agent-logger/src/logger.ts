@@ -78,10 +78,7 @@ export class ActivityLogger {
 
   private setupGracefulShutdown(): void {
     const shutdown = () => {
-      this.close().then(() => {
-        process.exit(0);
-      }).catch(() => {
-        process.exit(1);
+      this.close().catch(() => {
       });
     };
 
