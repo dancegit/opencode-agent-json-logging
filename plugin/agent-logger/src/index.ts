@@ -15,12 +15,15 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
   let logger: ActivityLogger | null = null;
   let rotator: LogRotator | null = null;
   let sessionId: string | undefined;
+  let sessionName: string | undefined;
 
   try {
     config = loadConfig();
-    logger = new ActivityLogger(config);
-    rotator = new LogRotator(config);
     sessionId = client?.session?.id;
+    sessionName = client?.session?.name || client?.project?.name;
+    
+    logger = new ActivityLogger(config, sessionName);
+    rotator = new LogRotator(config);
 
     logger.log(serializeSessionStart(client, config));
   } catch (error) {

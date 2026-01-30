@@ -10,8 +10,10 @@ export class ActivityLogger {
   private currentLogPath: string = '';
   private isClosing: boolean = false;
   private writeQueue: Promise<void> = Promise.resolve();
+  private sessionName: string | undefined;
 
-  constructor(private config: LoggerConfig) {
+  constructor(private config: LoggerConfig, sessionName?: string) {
+    this.sessionName = sessionName;
     this.ensureLogDirectory();
     this.initializeStream();
     this.setupPeriodicFlush();
@@ -74,6 +76,15 @@ export class ActivityLogger {
     filename = filename.replace(/{mm}/g, minutes);
     filename = filename.replace(/{ss}/g, seconds);
     filename = filename.replace(/{YYYY-MM-DD}/g, `${year}-${month}-${day}`);
+    
+    if (this.sessionName) {
+      const sanitizedSession = this.sessionName
+        .replace(/[^a-zA-Z0-9-_]/g, '_')
+        .substring(0, 50);
+      filename = filename.replace(/{session}/g, sanitizedSession);
+    } else {
+      filename = filename.replace(/{session}/g, 'unknown');
+    }
 
     return join(this.config.logDir, filename);
   }
