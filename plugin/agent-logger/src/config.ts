@@ -26,15 +26,13 @@ const DEFAULT_CONFIG: LoggerConfig = {
 export function loadConfig(): LoggerConfig {
   let config: LoggerConfig = { ...DEFAULT_CONFIG };
 
-  const opencodeConfigPath = getOpenCodeConfigPath();
-  if (existsSync(opencodeConfigPath)) {
+  const pluginConfigPath = getPluginConfigPath();
+  if (existsSync(pluginConfigPath)) {
     try {
-      const opencodeConfig = JSON.parse(readFileSync(opencodeConfigPath, 'utf8'));
-      if (opencodeConfig['agent-logger']) {
-        config = mergeConfig(config, opencodeConfig['agent-logger']);
-      }
+      const pluginConfig = JSON.parse(readFileSync(pluginConfigPath, 'utf8'));
+      config = mergeConfig(config, pluginConfig);
     } catch (error) {
-      console.error('[AgentLogger] Failed to parse OpenCode config:', error);
+      console.error('[AgentLogger] Failed to parse plugin config:', error);
     }
   }
 
@@ -44,9 +42,9 @@ export function loadConfig(): LoggerConfig {
   return config;
 }
 
-function getOpenCodeConfigPath(): string {
+function getPluginConfigPath(): string {
   const configHome = process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
-  return join(configHome, 'opencode', 'opencode.json');
+  return join(configHome, 'opencode', 'agent-logger.json');
 }
 
 function mergeConfig(base: LoggerConfig, override: Partial<LoggerConfig>): LoggerConfig {

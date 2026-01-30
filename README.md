@@ -37,22 +37,27 @@ npm run build
 {
   "plugins": [
     "~/.config/opencode/plugin/agent-logger/dist/index.js"
-  ],
-  "agent-logger": {
-    "logDir": ".opencode/logs",
-    "rotation": {
-      "enabled": true,
-      "maxSizeMB": 100,
-      "maxFiles": 10,
-      "maxAgeDays": 30
-    },
-    "verbosity": "info",
-    "buffering": {
-      "enabled": true,
-      "flushIntervalMs": 100
-    },
-    "excludedEvents": ["token_usage", "heartbeat"]
-  }
+  ]
+}
+```
+
+3. Create plugin configuration file (`~/.config/opencode/agent-logger.json`):
+
+```json
+{
+  "logDir": ".opencode/logs",
+  "rotation": {
+    "enabled": true,
+    "maxSizeMB": 100,
+    "maxFiles": 10,
+    "maxAgeDays": 30
+  },
+  "verbosity": "info",
+  "buffering": {
+    "enabled": true,
+    "flushIntervalMs": 100
+  },
+  "excludedEvents": ["token_usage", "heartbeat"]
 }
 ```
 
@@ -72,6 +77,11 @@ npm run build
 | `buffering.enabled` | boolean | `true` | Enable write buffering |
 | `buffering.flushIntervalMs` | number | `100` | Buffer flush interval |
 | `buffering.highWatermarkBytes` | number | `16384` | Buffer high watermark |
+
+### Configuration File Location
+
+Create the configuration file at:
+- `~/.config/opencode/agent-logger.json`
 
 ### Environment Variables
 
@@ -177,7 +187,7 @@ npm run clean
 
 ### High disk usage
 
-Adjust rotation settings:
+Adjust rotation settings in `~/.config/opencode/agent-logger.json`:
 ```json
 {
   "rotation": {
