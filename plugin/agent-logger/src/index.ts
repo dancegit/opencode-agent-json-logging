@@ -10,23 +10,10 @@ import {
 } from './serializers.js';
 import type { ToolEvent, LoggerConfig } from './types.js';
 
-interface Plugin {
-  event?: (input: { type: string; data?: any }) => Promise<void>;
-  'tool.execute.before'?: (input: { tool: string; args: any }) => Promise<void>;
-  'tool.execute.after'?: (
-    input: { tool: string; args: any },
-    output: { duration: number; result?: any }
-  ) => Promise<void>;
-  'client.init'?: () => Promise<void>;
-  close?: () => Promise<void>;
-  'hook.error'?: (error: Error, hookName: string) => Promise<void>;
-}
-
-export default async function AgentLogger({ client }: { client: any }): Promise<Plugin> {
-  let initialized = false;
-  let config: LoggerConfig;
-  let logger: ActivityLogger;
-  let rotator: LogRotator;
+export default async function AgentLogger({ client }: { client: any }): Promise<any> {
+  let config: LoggerConfig | null = null;
+  let logger: ActivityLogger | null = null;
+  let rotator: LogRotator | null = null;
   let sessionId: string | undefined;
 
   try {
@@ -34,7 +21,6 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     logger = new ActivityLogger(config);
     rotator = new LogRotator(config);
     sessionId = client?.session?.id;
-    initialized = true;
 
     logger.log(serializeSessionStart(client, config));
   } catch (error) {
@@ -42,9 +28,9 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     return {};
   }
 
-  return {
+  const hooks = {
     event: async (input: { type: string; data?: any }) => {
-      if (!initialized) return;
+      if (!logger || !config) return;
       try {
         if (config.excludedEvents.includes(input.type)) {
           return;
@@ -56,7 +42,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
           logger.log(entry);
         }
 
-        if (Math.random() < 0.01) {
+        if (Math.random() < 0.01 && rotator) {
           const newPath = rotator.checkRotation(logger.currentPath);
           if (newPath) {
             logger.rotate(newPath);
@@ -68,7 +54,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     'tool.execute.before': async (input: { tool: string; args: any }) => {
-      if (!initialized) return;
+      if (!logger || !config) return;
       try {
         const toolEvent: ToolEvent = {
           tool: input.tool,
@@ -90,7 +76,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
       input: { tool: string; args: any },
       output: { duration: number; result?: any }
     ) => {
-      if (!initialized) return;
+      if (!logger || !config || !rotator) return;
       try {
         const toolEvent: ToolEvent = {
           tool: input.tool,
@@ -116,7 +102,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     'client.init': async () => {
-      if (!initialized) return;
+      if (!logger || !config) return;
       try {
         logger.log({
           timestamp: getTimestamp(config),
@@ -135,7 +121,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     close: async () => {
-      if (!initialized) return;
+      if (!logger || !config || !rotator) return;
       try {
         logger.log(serializeSessionEnd(client, config));
         await logger.close();
@@ -146,7 +132,7 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
     },
 
     'hook.error': async (error: Error, hookName: string) => {
-      if (!initialized) return;
+      if (!logger || !config) return;
       try {
         const entry = serializeError(error, `hook:${hookName}`, config, sessionId);
         logger.log(entry);
@@ -155,4 +141,6 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
       }
     },
   };
+
+  return hooks;
 }

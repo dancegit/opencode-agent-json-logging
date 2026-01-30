@@ -55,28 +55,34 @@ echo "========================================"
 echo "✅ Installation complete!"
 echo "========================================"
 echo ""
-echo "Add the following to your ~/.config/opencode/opencode.json:"
+echo "Step 1: Add the following to your ~/.config/opencode/opencode.json:"
 echo ""
 cat <<EOF
 {
   "plugins": [
     "$PLUGIN_DIR/dist/index.js"
-  ],
-  "agent-logger": {
-    "logDir": ".opencode/logs",
-    "rotation": {
-      "enabled": true,
-      "maxSizeMB": 100,
-      "maxFiles": 10,
-      "maxAgeDays": 30
-    },
-    "verbosity": "info",
-    "buffering": {
-      "enabled": true,
-      "flushIntervalMs": 100
-    },
-    "excludedEvents": ["token_usage", "heartbeat"]
-  }
+  ]
+}
+EOF
+
+echo ""
+echo "Step 2: Create plugin configuration at ~/.config/opencode/agent-logger.json:"
+echo ""
+cat <<EOF
+{
+  "logDir": ".opencode/logs",
+  "rotation": {
+    "enabled": true,
+    "maxSizeMB": 100,
+    "maxFiles": 10,
+    "maxAgeDays": 30
+  },
+  "verbosity": "info",
+  "buffering": {
+    "enabled": true,
+    "flushIntervalMs": 100
+  },
+  "excludedEvents": ["token_usage", "heartbeat"]
 }
 EOF
 
