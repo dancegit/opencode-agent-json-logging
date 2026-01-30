@@ -5,7 +5,7 @@ import type { LoggerConfig, LogLevel } from './types.js';
 
 const DEFAULT_CONFIG: LoggerConfig = {
   logDir: '.opencode/logs',
-  filenamePattern: 'agent-{YYYY-MM-DD}.ndjson',
+  filenamePattern: 'agent-{YYYY-MM-DD-HH-mm-ss}.ndjson',
   rotation: {
     enabled: true,
     maxSizeMB: 100,

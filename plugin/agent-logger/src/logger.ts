@@ -59,8 +59,22 @@ export class ActivityLogger {
 
   private generateLogPath(): string {
     const date = new Date();
-    const dateStr = date.toISOString().split('T')[0];
-    const filename = this.config.filenamePattern.replace('{YYYY-MM-DD}', dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    let filename = this.config.filenamePattern;
+    filename = filename.replace(/{YYYY}/g, String(year));
+    filename = filename.replace(/{MM}/g, month);
+    filename = filename.replace(/{DD}/g, day);
+    filename = filename.replace(/{HH}/g, hours);
+    filename = filename.replace(/{mm}/g, minutes);
+    filename = filename.replace(/{ss}/g, seconds);
+    filename = filename.replace(/{YYYY-MM-DD}/g, `${year}-${month}-${day}`);
+
     return join(this.config.logDir, filename);
   }
 
