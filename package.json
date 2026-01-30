@@ -1,0 +1,13 @@
+{
+  "name": "opencode-agent-json-logging",
+  "version": "1.0.0",
+  "description": "OpenCode Agent Logger Plugin - Root package",
+  "scripts": {
+    "build": "cd plugin/agent-logger && npm run build",
+    "install:plugin": "cd plugin/agent-logger && npm install",
+    "clean": "cd plugin/agent-logger && npm run clean",
+    "dev": "cd plugin/agent-logger && npm run dev"
+  },
+  "keywords": ["opencode", "plugin", "logger"],
+  "license": "MIT"
+}
