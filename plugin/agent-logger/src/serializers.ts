@@ -44,6 +44,13 @@ export function serializeSystemEvent(
     return null;
   }
 
+  const hasMeaningfulData = payload && 
+    (typeof payload !== 'object' || Object.keys(payload).length > 0);
+  
+  if (!hasMeaningfulData) {
+    return null;
+  }
+
   return {
     timestamp: getTimestamp(config),
     level: 'debug',
@@ -60,6 +67,12 @@ export function serializeSessionStart(
   client: any,
   config: LoggerConfig
 ): LogEntry {
+  const sessionName = client?.session?.name || 
+                      client?.project?.name || 
+                      client?.session?.id?.substring(0, 8) ||
+                      process.cwd().split('/').pop() ||
+                      'unknown';
+  
   return {
     timestamp: getTimestamp(config),
     level: 'info',
@@ -67,11 +80,15 @@ export function serializeSessionStart(
     session_id: client?.session?.id,
     data: {
       event: 'session_start',
+      session_name: sessionName,
       model: client?.model?.name,
       cwd: process.cwd(),
       args: process.argv,
       node_version: process.version,
       platform: process.platform,
+      client_keys: Object.keys(client || {}),
+      session_keys: Object.keys(client?.session || {}),
+      project_keys: Object.keys(client?.project || {}),
     },
   };
 }

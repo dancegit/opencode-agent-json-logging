@@ -10,6 +10,8 @@ export interface RotationConfig {
   maxSizeMB: number;
   maxFiles: number;
   maxAgeDays: number;
+  compress: boolean;
+  compressionLevel: number;
 }
 
 export interface BufferingConfig {

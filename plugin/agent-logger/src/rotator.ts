@@ -1,5 +1,6 @@
-import { statSync, readdirSync, unlinkSync, renameSync, existsSync } from 'fs';
+import { statSync, readdirSync, unlinkSync, renameSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join, basename } from 'path';
+import { gzipSync } from 'zlib';
 import type { LoggerConfig } from './types.js';
 
 export class LogRotator {
@@ -35,20 +36,34 @@ export class LogRotator {
 
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const archiveFilename = basename(currentPath).replace(
+      let archiveFilename = basename(currentPath).replace(
         '.ndjson',
         `-${timestamp}.ndjson`
       );
-      const archivePath = join(this.config.logDir, 'archive', archiveFilename);
-
+      
+      if (this.config.rotation.compress) {
+        archiveFilename += '.gz';
+      }
+      
       const archiveDir = join(this.config.logDir, 'archive');
       if (!existsSync(archiveDir)) {
         const fs = require('fs');
         fs.mkdirSync(archiveDir, { recursive: true });
       }
 
+      const archivePath = join(archiveDir, archiveFilename);
+
       if (existsSync(currentPath)) {
-        renameSync(currentPath, archivePath);
+        if (this.config.rotation.compress) {
+          const input = readFileSync(currentPath);
+          const compressed = gzipSync(input, { 
+            level: this.config.rotation.compressionLevel 
+          });
+          writeFileSync(archivePath, compressed);
+          unlinkSync(currentPath);
+        } else {
+          renameSync(currentPath, archivePath);
+        }
       }
 
       this.cleanup();
@@ -75,7 +90,7 @@ export class LogRotator {
       }
 
       const files = readdirSync(archiveDir)
-        .filter((f) => f.endsWith('.ndjson'))
+        .filter((f) => f.endsWith('.ndjson') || f.endsWith('.ndjson.gz'))
         .map((f) => {
           const path = join(archiveDir, f);
           try {
@@ -140,7 +155,7 @@ export class LogRotator {
       }
 
       return readdirSync(archiveDir)
-        .filter((f) => f.endsWith('.ndjson'))
+        .filter((f) => f.endsWith('.ndjson') || f.endsWith('.ndjson.gz'))
         .map((f) => {
           const path = join(archiveDir, f);
           try {

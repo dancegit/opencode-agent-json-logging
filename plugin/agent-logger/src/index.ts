@@ -20,7 +20,11 @@ export default async function AgentLogger({ client }: { client: any }): Promise<
   try {
     config = loadConfig();
     sessionId = client?.session?.id;
-    sessionName = client?.session?.name || client?.project?.name;
+    sessionName = client?.session?.name || 
+                  client?.project?.name || 
+                  client?.session?.id?.substring(0, 8) ||
+                  process.cwd().split('/').pop() ||
+                  'unknown';
     
     logger = new ActivityLogger(config, sessionName);
     rotator = new LogRotator(config);

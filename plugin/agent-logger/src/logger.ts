@@ -2,6 +2,7 @@ import { createWriteStream, WriteStream, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { LoggerConfig, LogEntry } from './types.js';
 import { getTimestamp, shouldLogLevel } from './config.js';
+import { ensureGitignoreEntry } from './gitignore.js';
 
 export class ActivityLogger {
   private stream: WriteStream | null = null;
@@ -37,6 +38,8 @@ export class ActivityLogger {
         }
       }
     }
+    
+    ensureGitignoreEntry(this.config.logDir);
   }
 
   private initializeStream(): void {
@@ -69,13 +72,14 @@ export class ActivityLogger {
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
     let filename = this.config.filenamePattern;
+    filename = filename.replace(/{YYYY-MM-DD-HH-mm-ss}/g, `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`);
+    filename = filename.replace(/{YYYY-MM-DD}/g, `${year}-${month}-${day}`);
     filename = filename.replace(/{YYYY}/g, String(year));
     filename = filename.replace(/{MM}/g, month);
     filename = filename.replace(/{DD}/g, day);
     filename = filename.replace(/{HH}/g, hours);
     filename = filename.replace(/{mm}/g, minutes);
     filename = filename.replace(/{ss}/g, seconds);
-    filename = filename.replace(/{YYYY-MM-DD}/g, `${year}-${month}-${day}`);
     
     if (this.sessionName) {
       const sanitizedSession = this.sessionName

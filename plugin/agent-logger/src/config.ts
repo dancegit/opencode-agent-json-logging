@@ -11,6 +11,8 @@ const DEFAULT_CONFIG: LoggerConfig = {
     maxSizeMB: 100,
     maxFiles: 10,
     maxAgeDays: 30,
+    compress: true,
+    compressionLevel: 6,
   },
   verbosity: 'info',
   excludedEvents: ['token_usage', 'heartbeat'],
@@ -96,6 +98,9 @@ function validateConfig(config: LoggerConfig): LoggerConfig {
   if (config.rotation.maxSizeMB < 1) config.rotation.maxSizeMB = 1;
   if (config.rotation.maxFiles < 1) config.rotation.maxFiles = 1;
   if (config.rotation.maxAgeDays < 1) config.rotation.maxAgeDays = 1;
+  if (config.rotation.compressionLevel < 1 || config.rotation.compressionLevel > 9) {
+    config.rotation.compressionLevel = 6;
+  }
   if (config.buffering.flushIntervalMs < 10) config.buffering.flushIntervalMs = 10;
   if (config.buffering.highWatermarkBytes < 1024) config.buffering.highWatermarkBytes = 1024;
 
