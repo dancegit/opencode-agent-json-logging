@@ -6,6 +6,9 @@ A production-ready TypeScript plugin for OpenCode that captures all activities a
 
 - **Real-time NDJSON Logging**: Structured JSON logs with one event per line
 - **Automatic Log Rotation**: Size-based and count-based rotation with archival
+- **Log Archive Compression**: Gzip compression for archived logs to save disk space
+- **Automatic .gitignore Management**: Automatically adds log directory to .gitignore
+- **Intelligent Filename Generation**: Session-based filenames with customizable patterns
 - **Configurable Verbosity**: debug, info, warn, error log levels
 - **High Performance**: Buffered writes with configurable flush intervals
 - **Security**: Automatic sanitization of sensitive data (passwords, tokens, secrets)
@@ -46,11 +49,14 @@ npm run build
 ```json
 {
   "logDir": ".opencode/logs",
+  "filenamePattern": "{session}-{YYYY-MM-DD-HH-mm-ss}.ndjson",
   "rotation": {
     "enabled": true,
     "maxSizeMB": 100,
     "maxFiles": 10,
-    "maxAgeDays": 30
+    "maxAgeDays": 30,
+    "compress": true,
+    "compressionLevel": 6
   },
   "verbosity": "info",
   "buffering": {
@@ -71,12 +77,35 @@ npm run build
 | `rotation.maxSizeMB` | number | `100` | Rotate when file exceeds this size |
 | `rotation.maxFiles` | number | `10` | Keep maximum N archived files |
 | `rotation.maxAgeDays` | number | `30` | Delete files older than N days |
+| `rotation.compress` | boolean | `true` | Compress archived logs with gzip |
+| `rotation.compressionLevel` | number | `6` | Gzip compression level (1-9) |
 | `verbosity` | string | `"info"` | Log level: debug, info, warn, error |
 | `excludedEvents` | array | `["token_usage"]` | Events to exclude from logging |
 | `timestampFormat` | string | `"ISO"` | Format: ISO, epoch, local |
 | `buffering.enabled` | boolean | `true` | Enable write buffering |
 | `buffering.flushIntervalMs` | number | `100` | Buffer flush interval |
 | `buffering.highWatermarkBytes` | number | `16384` | Buffer high watermark |
+
+### Filename Patterns
+
+The `filenamePattern` supports placeholders that are replaced at runtime:
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{YYYY}` | 4-digit year | 2026 |
+| `{MM}` | 2-digit month | 02 |
+| `{DD}` | 2-digit day | 02 |
+| `{HH}` | 2-digit hour (24h) | 14 |
+| `{mm}` | 2-digit minute | 30 |
+| `{ss}` | 2-digit second | 45 |
+| `{YYYY-MM-DD}` | Full date | 2026-02-02 |
+| `{YYYY-MM-DD-HH-mm-ss}` | Full datetime | 2026-02-02-14-30-45 |
+| `{session}` | Project/session name | my-project |
+
+**Examples:**
+- `{session}-{YYYY-MM-DD}.ndjson` → `my-project-2026-02-02.ndjson`
+- `agent-{YYYY-MM-DD-HH-mm-ss}.ndjson` → `agent-2026-02-02-14-30-45.ndjson`
+- `{session}-{YYYY-MM-DD-HH-mm-ss}.ndjson` → `my-project-2026-02-02-14-30-45.ndjson`
 
 ### Configuration File Location
 
@@ -130,6 +159,23 @@ Logs are automatically rotated based on:
 
 Archived logs are stored in `{logDir}/archive/` with timestamps.
 
+### Archive Compression
+
+When `rotation.compress` is enabled (default: true), archived logs are compressed using gzip:
+- Compressed files have `.gz` extension: `filename-{timestamp}.ndjson.gz`
+- Typical compression ratio: 80-90% reduction for NDJSON logs
+- Compression level is configurable (1-9, default: 6)
+
+### Automatic .gitignore
+
+The plugin automatically manages your project's `.gitignore` file:
+- Adds the log directory entry if not present
+- Creates `.gitignore` if it doesn't exist
+- Prevents duplicate entries
+- Uses relative paths from git repository root
+
+**Example:** If your `logDir` is `.opencode/logs`, the plugin will add `.opencode/logs/` to `.gitignore`.
+
 ## Performance Metrics
 
 - **Write Throughput**: >10,000 events/sec
@@ -174,6 +220,12 @@ npm run dev
 
 # Clean build
 npm run clean
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
 ```
 
 ## Troubleshooting
@@ -187,16 +239,20 @@ npm run clean
 
 ### High disk usage
 
-Adjust rotation settings in `~/.config/opencode/agent-logger.json`:
+Enable compression and adjust rotation settings in `~/.config/opencode/agent-logger.json`:
 ```json
 {
   "rotation": {
     "maxSizeMB": 50,
     "maxFiles": 5,
-    "maxAgeDays": 7
+    "maxAgeDays": 7,
+    "compress": true,
+    "compressionLevel": 6
   }
 }
 ```
+
+Compression typically reduces log size by 80-90%.
 
 ### Too verbose
 
@@ -219,15 +275,19 @@ Or exclude specific events:
 ```
 plugin/agent-logger/
 ├── src/
-│   ├── index.ts        # Plugin entry point
-│   ├── logger.ts       # Core logging engine
-│   ├── rotator.ts      # Log rotation logic
-│   ├── serializers.ts  # Event transformation
-│   ├── config.ts       # Configuration management
-│   └── types.ts        # TypeScript definitions
-├── dist/               # Compiled JavaScript
+│   ├── index.ts              # Plugin entry point
+│   ├── logger.ts             # Core logging engine
+│   ├── rotator.ts            # Log rotation and compression
+│   ├── serializers.ts        # Event transformation
+│   ├── config.ts             # Configuration management
+│   ├── types.ts              # TypeScript definitions
+│   ├── gitignore.ts          # .gitignore automation
+│   └── __tests__/
+│       └── rotator.test.ts   # Unit tests
+├── dist/                     # Compiled JavaScript
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── vitest.config.ts          # Test configuration
 ```
 
 ## License
