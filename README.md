@@ -14,6 +14,7 @@ A production-ready TypeScript plugin for OpenCode that captures all activities a
 - **Security**: Automatic sanitization of sensitive data (passwords, tokens, secrets)
 - **Graceful Shutdown**: Handles SIGINT/SIGTERM without data loss
 - **Zero Dependencies**: Pure Node.js implementation
+- **Noise Reduction**: Automatically filters out empty, repetitive, and meaningless events
 
 ## Installation
 
@@ -123,6 +124,36 @@ AGENT_LOGGER_EXCLUDED_EVENTS=token_usage,heartbeat
 AGENT_LOGGER_ROTATION_MAX_SIZE_MB=50
 AGENT_LOGGER_BUFFERING_ENABLED=true
 ```
+
+### Excluded Events
+
+The following events are automatically excluded from logging to reduce noise:
+
+| Event Type | Reason |
+|------------|--------|
+| `heartbeat`, `ping`, `pong` | Keepalive events with no useful data |
+| `cursor`, `viewport`, `render` | UI rendering events |
+| `focus_change`, `blur`, `focus` | Focus events |
+| `mouse_move`, `mousemove` | Mouse tracking |
+| `key_press`, `keydown`, `keyup` | Keyboard events |
+| `scroll`, `resize`, `hover` | UI interaction events |
+| `typing_indicator` | Typing status |
+| `presence_update` | Presence changes |
+| `notification_dismiss` | Notification events |
+| `visibility_change` | Page visibility |
+| `online`, `offline` | Network status |
+| And more... | See `serializers.ts` for full list |
+
+### Empty Data Filtering
+
+Events with empty or meaningless data are automatically filtered:
+
+- Empty objects `{}`
+- Objects with all null/undefined values
+- Empty strings or whitespace-only strings
+- Null or undefined payloads
+
+This reduces log size by up to 90% in typical sessions.
 
 ## Log Format
 

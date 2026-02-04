@@ -36,18 +36,89 @@ export function serializeSystemEvent(
   config: LoggerConfig,
   sessionId?: string
 ): LogEntry | null {
+  // Skip excluded events
   if (config.excludedEvents.includes(eventType)) {
     return null;
   }
 
+  // Skip if debug level not enabled
   if (!shouldLogLevel(config, 'debug')) {
     return null;
   }
 
-  const hasMeaningfulData = payload && 
-    (typeof payload !== 'object' || Object.keys(payload).length > 0);
+  // Skip events with no meaningful data
+  // Handle: null, undefined, empty object {}, empty string ""
+  if (!payload) {
+    return null;
+  }
+
+  // For objects, check if they have any keys
+  if (typeof payload === 'object') {
+    if (Object.keys(payload).length === 0) {
+      return null;
+    }
+    // Check if all values are empty/null/undefined
+    const hasAnyValue = Object.values(payload).some(v => 
+      v !== null && v !== undefined && v !== '' && 
+      !(typeof v === 'object' && Object.keys(v).length === 0)
+    );
+    if (!hasAnyValue) {
+      return null;
+    }
+  }
+
+  // For strings, skip empty or whitespace-only
+  if (typeof payload === 'string' && payload.trim().length === 0) {
+    return null;
+  }
+
+  // Skip repetitive/known noisy event types
+  const noisyEventTypes = [
+    'heartbeat',
+    'ping',
+    'pong', 
+    'keepalive',
+    'status_check',
+    'cursor',
+    'viewport',
+    'render',
+    'draw',
+    'update_cursor',
+    'focus_change',
+    'selection_change',
+    'mouse_move',
+    'key_press',
+    'input_idle',
+    'activity_idle',
+    'typing_indicator',
+    'presence_update',
+    'notification_dismiss',
+    'scroll',
+    'resize',
+    'hover',
+    'click',
+    'keydown',
+    'keyup',
+    'mousemove',
+    'mouseup',
+    'mousedown',
+    'touchstart',
+    'touchend',
+    'touchmove',
+    'visibility_change',
+    'page_hide',
+    'page_show',
+    'beforeunload',
+    'unload',
+    'online',
+    'offline',
+    'blur',
+    'focus',
+    'activate',
+    'deactivate',
+  ];
   
-  if (!hasMeaningfulData) {
+  if (noisyEventTypes.includes(eventType.toLowerCase())) {
     return null;
   }
 
